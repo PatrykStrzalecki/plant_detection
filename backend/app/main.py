@@ -4,7 +4,7 @@ import asyncio
 
 from contextlib import asynccontextmanager
 
-from typing import Annotated, List, Dict
+from typing import Annotated, Dict
 from fastapi import (
     FastAPI, UploadFile, HTTPException, status,
     File, Depends, WebSocket, WebSocketDisconnect

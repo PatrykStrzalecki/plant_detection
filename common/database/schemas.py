@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
-from app.utils.defaults import TASK_STATUS_PENDING
+from common.utils.defaults import TASK_STATUS_PENDING
 
 
 class BoundingBox(BaseModel):

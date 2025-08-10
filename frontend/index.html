@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Detection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        #status { font-weight: bold; margin-top: 10px; }
+        #result-container { margin-top: 20px; }
+        #result-image { max-width: 100%; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Plant Detection</h1>
+        <div class="form-group">
+            <input type="file" id="image-file" accept="image/*">
+        </div>
+        <button onclick="uploadImage()">Send image</button>
+        <div id="status"></div>
+        <div id="result-container">
+            <h2>Detection results</h2>
+            <div id="result-details"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
