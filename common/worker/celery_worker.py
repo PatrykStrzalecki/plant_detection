@@ -1,4 +1,5 @@
 import os
+import redis
 import logging
 import datetime
 
@@ -25,6 +26,9 @@ from common.utils.defaults import (
 )
 
 load_dotenv()
+
+REDIS_URL = os.getenv("REDIS_URL")
+redis_client = redis.Redis.from_url(REDIS_URL)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,6 +64,7 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         detection_result = db.query(DetectionResult).filter(DetectionResult.id == detection_id).first()
         if not detection_result:
             logger.error(f"Detection result not found for ID: {detection_id}")
+            redis_client.publish(f"task_status_{detection_id}", TASK_STATUS_FAILED)
             return {
                 "status": TASK_STATUS_FAILED,
                 "message": "Detection result not found."
@@ -100,6 +105,7 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         db.refresh(detection_result)
 
         logger.info(f"Task completed for detection ID: {detection_id}")
+        redis_client.publish(f"task_status_{detection_id}", TASK_STATUS_COMPLETED)
         return {
             "status": TASK_STATUS_COMPLETED,
             "detection_id": detection_id,
@@ -112,4 +118,8 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         detection_result.task_status = TASK_STATUS_FAILED
         db.commit()
         logger.error(f"Error processing image for detection ID {detection_id}: {e}")
-        return {"status": TASK_STATUS_FAILED, "message": str(e)}
+        redis_client.publish(f"task_status_{detection_id}", TASK_STATUS_FAILED)
+        return {
+            "status": TASK_STATUS_FAILED,
+            "message": str(e)
+        }
