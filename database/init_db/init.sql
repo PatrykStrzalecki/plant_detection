@@ -9,6 +9,5 @@ CREATE TABLE IF NOT EXISTS detection_results (
     category INTEGER,
     bounding_boxes JSONB
 )
-
 CREATE INDEX IF NOT EXISTS idx_detection_results_original_image_path ON detection_results (original_image_path);
 CREATE INDEX IF NOT EXISTS idx_detection_results_task_status ON detection_results (task_status);

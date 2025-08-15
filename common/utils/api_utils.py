@@ -5,7 +5,7 @@ from fastapi import UploadFile
 
 from pathlib import Path
 
-from .defaults import INPUT_DIR
+from common.utils.defaults import INPUT_DIR
 
 def save_uploaded_file(upload_file: UploadFile) -> str:
     file_id = str(uuid4())

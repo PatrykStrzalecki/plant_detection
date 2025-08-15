@@ -2,16 +2,24 @@ FROM python:3.12-slim
 
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && \
+    apt-get install -y libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /app/.config/Ultralytics && chmod -R 777 /app/.config/Ultralytics
+
+ENV YOLO_CONFIG_DIR=/app/.config/Ultralytics
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY ./requirements.txt .
+COPY ./backend/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ../common .
-COPY ./app .
+COPY ./common ./common
+COPY ./models ./models
+COPY ./backend/app ./app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

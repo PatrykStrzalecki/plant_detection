@@ -2,7 +2,6 @@ celery[redis]
 redis
 ultralytics
 pillow
-opencv-python-headless
 python-dotenv
 sqlalchemy
 psycopg2-binary

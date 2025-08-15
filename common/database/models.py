@@ -1,9 +1,9 @@
 import datetime
 from sqlalchemy import Column, Integer, String, DateTime, JSON
 
-from utils.defaults import TASK_STATUS_PENDING
+from common.utils.defaults import TASK_STATUS_PENDING
 
-from .database import Base
+from common.database.database import Base
 
 
 class DetectionResult(Base):

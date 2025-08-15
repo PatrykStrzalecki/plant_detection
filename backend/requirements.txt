@@ -9,3 +9,5 @@ celery
 redis
 requests
 python-multipart
+pillow
+ultralytics

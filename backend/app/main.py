@@ -1,5 +1,5 @@
 import os
-import redis
+import redis.asyncio as aioredis
 import asyncio
 
 from contextlib import asynccontextmanager
@@ -10,6 +10,9 @@ from fastapi import (
     File, Depends, WebSocket, WebSocketDisconnect
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
@@ -18,7 +21,8 @@ from common.database import models, schemas
 
 from common.utils.api_utils import save_uploaded_file
 from common.utils.defaults import (
-    INPUT_DIR, OUTPUT_DIR, SUPPORTED_IMAGE_EXTENSIONS, DECODING
+    INPUT_DIR, OUTPUT_DIR, SUPPORTED_IMAGE_EXTENSIONS,
+    TASK_STATUS_COMPLETED, TASK_STATUS_FAILED
 )
 
 from common.worker.celery_worker import process_image_task
@@ -29,36 +33,59 @@ os.makedirs(INPUT_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 REDIS_URL = os.getenv("REDIS_URL")
-redis_client = redis.Redis.from_url(REDIS_URL)
+redis_client = aioredis.from_url(REDIS_URL, decode_responses = True)
 
 active_connections: Dict[int, WebSocket] = {}
 
 async def redis_listener():
     pubsub = redis_client.pubsub()
     await pubsub.psubscribe("task_status_*")
-    while True:
-        message = await pubsub.get_message(ignore_subscribe_messages = True)
-        if message:
-            channel = message["channel"].decode(DECODING)
-            task_id = int(channel.split("_")[-1])
-            status = message["data"].decode(DECODING)
-            if task_id in active_connections:
-                websocket = active_connections[task_id]
-                try:
-                    await websocket.send_json({"task_id": task_id, "status": status})
-                    await websocket.close(code = 1000)
-                    del active_connections[task_id]
-                except WebSocketDisconnect:
-                    del active_connections[task_id]
-        await asyncio.sleep(0.1)
+    try:
+        async for message in pubsub.listen():
+            if message["type"] == "pmessage":
+                channel = message["channel"]
+                task_id = int(channel.split("_")[-1])
+                status = message["data"]
+
+                if task_id in active_connections:
+                    websocket = active_connections[task_id]
+                    try:
+                        await websocket.send_json({"task_id": task_id, "status": status})
+                        if status in [TASK_STATUS_COMPLETED, TASK_STATUS_FAILED]:
+                            await websocket.close(code = 1000)
+                            del active_connections[task_id]
+                    except WebSocketDisconnect:
+                        if task_id in active_connections:
+                            del active_connections[task_id]
+                    except Exception as e:
+                        print(f"Error sending message to websocket: {e}")
+                        if task_id in active_connections:
+                            del active_connections[task_id]
+    except Exception as e:
+        print(f"Error in redis listener: {e}")
 
 @asynccontextmanager
 async def startup_event(app: FastAPI):
-    asyncio.create_task(redis_listener())
     models.Base.metadata.create_all(bind=engine)
+    asyncio.create_task(redis_listener())
     yield
 
 app = FastAPI(lifespan = startup_event)
+
+origins = [
+    "http://localhost",
+    "http://localhost:80"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = origins,
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"],
+)
+
+app.mount("/data", StaticFiles(directory="data"), name="data")
 
 @app.get("/")
 def read_root():

@@ -3,6 +3,7 @@ const STATUS_URL = "http://localhost:8000/task-status/";
 const WS_URL = "ws://localhost:8000/ws/task-status/";
 
 function uploadImage() {
+    console.log("Starting image upload process...");
     const fileInput = document.getElementById("image-file");
     const formData = new FormData();
     const statusDiv = document.getElementById("status");
@@ -12,8 +13,14 @@ function uploadImage() {
         statusDiv.textContent = "No file selected.";
         return;
     }
+    console.log("Selected file:", fileInput.files[0].name);
 
-    formData.append("image", fileInput.files[0]);
+    formData.append("file", fileInput.files[0]);
+    console.log("File details:", {
+        name: fileInput.files[0].name,
+        size: fileInput.files[0].size,
+        type: fileInput.files[0].type
+    });
     statusDiv.textContent = "Uploading image...";
     resultDetailsDiv.innerText = '';
 
@@ -21,7 +28,12 @@ function uploadImage() {
         method: "POST",
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         const taskId = data.id
         statusDiv.textContent = `Upload successful! Task ID: ${taskId}. Waiting for results...`;
@@ -29,6 +41,7 @@ function uploadImage() {
     })
     .catch(error => {
         statusDiv.textContent = `Error occurred: ${error.message}`;
+        console.error("Error during upload:", error);
     });
 }
 
@@ -44,14 +57,17 @@ function connectWebSocket(taskId) {
 
     socket.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        if (data.status === "SUCCESS") {
+        const taskStatus = data.status;
+        statusDiv.textContent = `Task status: ${taskStatus}`;
+
+        if (taskStatus === "SUCCESS") {
             statusDiv.textContent = "Processing complete! Fetching results...";
-            resultDetailsDiv.innerHTML = `<h3>Results:</h3><pre>${JSON.stringify(data.results, null, 2)}</pre>`;
             getTaskResults(data.task_id);
-        } else if (data.status === "FAILURE") {
+            socket.close();
+        } else if (taskStatus === "FAILURE") {
             statusDiv.textContent = "Task failed.";
+            socket.close();
         }
-        socket.close();
     };
 
     socket.onclose = function() {
@@ -69,7 +85,7 @@ function getTaskResults(taskId) {
     fetch(STATUS_URL + taskId)
         .then(response => response.json())
         .then(data => {
-            const processedImageURL = 'http://localhost:8000' + data.processed_image_path;
+            const processedImageURL = 'http://localhost:8000/' + data.processed_image_path;
             resultDetailsDiv.innerHTML = `
                 <p>Status: <strong>${data.task_status}</strong></p>
                 <p>Uploaded at: <strong>${data.uploaded_at}</strong></p>

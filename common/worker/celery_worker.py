@@ -9,6 +9,7 @@ from typing import Dict, Any
 from ultralytics import YOLO
 from dotenv import load_dotenv
 
+from common.database.schemas import BoundingBox
 from common.database.models import DetectionResult
 from common.database.database import Base, get_db, engine
 
@@ -56,7 +57,7 @@ except Exception as e:
 Base.metadata.create_all(bind=engine)
 
 
-@celery_app.task(bind = True, name = "process_image_task")
+@celery_app.task(name = "process_image_task")
 def process_image_task(detection_id: int) -> Dict[str, Any]:
     logger.info(f"Starting task for detection ID: {detection_id}")
     try:
@@ -83,7 +84,7 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         image = Image.open(input_image_path)
         image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
 
-        results = model(image, conf=CONFIDENCE_THRESHOLD, iou=NMS_THRESHOLD)
+        results = model(image, conf=CONFIDENCE_THRESHOLD)
         logger.info(f"Processing finished for image: {input_image_path}")
         
         if not results:
@@ -94,12 +95,25 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         logger.info(f"Output image saved to: {output_image_path}")
 
         bounding_boxes = results[0].boxes.xyxy.tolist()
+        confidences = results[0].boxes.conf.tolist()
+
+        formated_bounding_boxes = []
+        for i, box in enumerate(bounding_boxes):
+            formated_bounding_boxes.append(
+                BoundingBox(
+                    x1 = box[0],
+                    y1 = box[1],
+                    x2 = box[2],
+                    y2 = box[3],
+                    confidence = confidences[i]
+                ).model_dump()
+            )
 
         detection_result.processed_image_path = output_image_path
         detection_result.processed_at = datetime.datetime.now()
-        detection_result.num_flowers = len(bounding_boxes)
+        detection_result.num_flowers = len(formated_bounding_boxes)
         detection_result.category = FLOWER_CATEGORY         # TODO
-        detection_result.bounding_boxes = bounding_boxes
+        detection_result.bounding_boxes = formated_bounding_boxes
         detection_result.task_status = TASK_STATUS_COMPLETED
         db.commit()
         db.refresh(detection_result)

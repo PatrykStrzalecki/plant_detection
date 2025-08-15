@@ -34,8 +34,8 @@ class DetectionResult(DetectionResultBase):
     processed_at: Optional[datetime.datetime] = Field(None, description = "Timestamp when the image was processed")
 
     class Config:
-        orm_mode = True
-        schema_extra = {
+        from_attributes = True
+        json_schema_extra = {
             "example": {
                 "id": 1,
                 "original_image_path": "/images/original.jpg",

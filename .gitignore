@@ -14,3 +14,6 @@ venv/
 # Data Folders
 data/input/
 data/output/
+
+# Detection models
+models/

@@ -1,8 +1,9 @@
-version: "3.9"
 services:
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
     container_name: backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -19,7 +20,9 @@ services:
     restart: always
 
   worker:
-    build: ./worker
+    build:
+      context: .
+      dockerfile: ./worker/Dockerfile
     container_name: worker
     volumes:
       - ./data/input:/app/data/input
@@ -66,7 +69,9 @@ services:
 
   frontend:
     container_name: frontend
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
       - "${FRONTEND_PORT:-80}:80"
     volumes:
