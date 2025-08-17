@@ -3,29 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plant Detection</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-        .form-group { margin-bottom: 15px; }
-        #status { font-weight: bold; margin-top: 10px; }
-        #result-container { margin-top: 20px; }
-        #result-image { max-width: 100%; border-radius: 8px; }
-    </style>
+    <title>Plant Detection System</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Plant Detection</h1>
-        <div class="form-group">
-            <input type="file" id="image-file" accept="image/*">
+
+    <div class="header">
+        <div class="header-left">
+            <nav class="nav-menu">
+                <button class="nav-button active" data-target="detection-results">Detection results</button>
+                <button class="nav-button" data-target="settings" disabled>Settings</button>
+                <button class="nav-button" data-target="analytics" disabled>Analytics</button>
+                <button class="nav-button" data-target="upload">Upload</button>
+            </nav>
         </div>
-        <button onclick="uploadImage()">Send image</button>
-        <div id="status"></div>
-        <div id="result-container">
-            <h2>Detection results</h2>
-            <div id="result-details"></div>
+        <div class="header-right">
+            <span id="plc-status" class="status-indicator"></span>
+            <span class="plc-address">192.168.1.1</span>
         </div>
     </div>
+
+    <div class="main-container">
+        <div id="detection-results" class="panel visible">
+            <div class="panel-column left-panel">
+                <div class="panel-header">
+                    <h2>DAILY STATISTICS</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number">1</span>
+                        <span class="stat-value">2957</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">2</span>
+                        <span class="stat-value">3647</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">3</span>
+                        <span class="stat-value">1957</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">4</span>
+                        <span class="stat-value">4538</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-column center-panel">
+                <div class="result-box">
+                    <div class="result-row">
+                        <span>Detected flowers:</span>
+                        <span id="detected-flowers"></span>
+                        <span>Assigned category:</span>
+                        <span id="assigned-category"></span>
+                    </div>
+                    <div class="result-row">
+                        <span>Processing time:</span>
+                        <span id="processing-time"></span>
+                        <span>Processing status:</span>
+                        <span id="processing-status"></span>
+                    </div>
+                </div>
+                <div class="image-display" id="image-display">
+                    </div>
+            </div>
+
+            <div class="panel-column right-panel">
+                <div class="control-box">
+                    <div class="indicator-group">
+                        <span id="status-red" class="indicator red active"></span>
+                        <span id="status-green" class="indicator green"></span>
+                        <button class="control-button" id="start-button">
+                            <span class="start-icon">▶</span> START
+                        </button>
+                    </div>
+                    <div class="speed-control">
+                        <button class="speed-button" id="speed-up">+</button>
+                        <span class="speed-display">60</span>
+                        <button class="speed-button" id="speed-down">-</button>
+                    </div>
+                    <div class="auto-stop">
+                        <span>AUTO STOP</span>
+                        <input type="time" class="time-input" value="10:30">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="upload" class="panel hidden">
+            <div class="upload-form-container">
+                <h2>Manual Upload</h2>
+                <div class="form-group">
+                    <input type="file" id="image-file" accept="image/*">
+                </div>
+                <button onclick="uploadImage()">Send image</button>
+                <div id="status"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

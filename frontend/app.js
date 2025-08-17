@@ -2,12 +2,56 @@ const UPLOAD_URL = "http://localhost:8000/upload-image";
 const STATUS_URL = "http://localhost:8000/task-status/";
 const WS_URL = "ws://localhost:8000/ws/task-status/";
 
+const navButtons = document.querySelectorAll('.nav-button');
+const panels = document.querySelectorAll('.panel');
+const uploadButton = document.querySelector('.upload-form-container button');
+const fileInput = document.getElementById("image-file");
+
+// Mocked PLC status
+const plcStatusIndicator = document.getElementById("plc-status");
+plcStatusIndicator.classList.add('connected'); // Mock: always connected
+
+// UI Logic
+navButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const targetId = button.dataset.target;
+
+        panels.forEach(panel => {
+            if (panel.id === targetId) {
+                panel.classList.add('visible');
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+                panel.classList.remove('visible');
+            }
+        });
+
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+    });
+});
+
+// Mocked machine control logic
+const startButton = document.getElementById("start-button");
+const redIndicator = document.getElementById("status-red");
+const greenIndicator = document.getElementById("status-green");
+let isRunning = false;
+
+startButton.addEventListener('click', () => {
+    isRunning = !isRunning;
+    if (isRunning) {
+        greenIndicator.classList.add('active');
+        redIndicator.classList.remove('active');
+    } else {
+        greenIndicator.classList.remove('active');
+        redIndicator.classList.add('active');
+    }
+});
+
 function uploadImage() {
     console.log("Starting image upload process...");
-    const fileInput = document.getElementById("image-file");
     const formData = new FormData();
     const statusDiv = document.getElementById("status");
-    const resultDetailsDiv = document.getElementById("result-details");
 
     if (!fileInput.files || fileInput.files.length === 0) {
         statusDiv.textContent = "No file selected.";
@@ -22,7 +66,6 @@ function uploadImage() {
         type: fileInput.files[0].type
     });
     statusDiv.textContent = "Uploading image...";
-    resultDetailsDiv.innerText = '';
 
     fetch(UPLOAD_URL, {
         method: "POST",
@@ -37,6 +80,7 @@ function uploadImage() {
     .then(data => {
         const taskId = data.id
         statusDiv.textContent = `Upload successful! Task ID: ${taskId}. Waiting for results...`;
+        document.querySelector('[data-target="detection-results"]').click();
         connectWebSocket(taskId);
     })
     .catch(error => {
@@ -48,7 +92,6 @@ function uploadImage() {
 
 function connectWebSocket(taskId) {
     const statusDiv = document.getElementById("status");
-    const resultDetailsDiv = document.getElementById("result-details");
     const socket = new WebSocket(WS_URL + taskId);
 
     socket.onopen = () => {
@@ -58,14 +101,14 @@ function connectWebSocket(taskId) {
     socket.onmessage = function(event) {
         const data = JSON.parse(event.data);
         const taskStatus = data.status;
-        statusDiv.textContent = `Task status: ${taskStatus}`;
+        document.getElementById("processing-status").textContent = taskStatus.toUpperCase();
 
         if (taskStatus === "SUCCESS") {
-            statusDiv.textContent = "Processing complete! Fetching results...";
             getTaskResults(data.task_id);
+            document.getElementById("processing-status").textContent = taskStatus.toUpperCase();
             socket.close();
         } else if (taskStatus === "FAILURE") {
-            statusDiv.textContent = "Task failed.";
+            document.getElementById("processing-status").textContent = taskStatus.toUpperCase();
             socket.close();
         }
     };
@@ -80,22 +123,22 @@ function connectWebSocket(taskId) {
 }
 
 function getTaskResults(taskId) {
-    const resultDetailsDiv = document.getElementById("result-details");
-
     fetch(STATUS_URL + taskId)
         .then(response => response.json())
         .then(data => {
             const processedImageURL = 'http://localhost:8000/' + data.processed_image_path;
-            resultDetailsDiv.innerHTML = `
-                <p>Status: <strong>${data.task_status}</strong></p>
-                <p>Uploaded at: <strong>${data.uploaded_at}</strong></p>
-                <p>Processed at: <strong>${data.processed_at}</strong></p>
-                <p>Original image: <strong>${data.original_image_path}</strong></p>
-                <p>Processed image: <strong>${data.processed_image_path}</strong></p>
-                <h3>Results:</h3><img src="${processedImageURL}" id="result-image" alt="Processed Image">
-            `;
+            const imageDisplayDiv = document.getElementById('image-display');
+            imageDisplayDiv.innerHTML = `<img src="${processedImageURL}" alt="Processed Image">`;
+            document.getElementById('detected-flowers').textContent = data.num_flowers || 'N/A';
+            document.getElementById('assigned-category').textContent = data.category || 'N/A';
+            
+            const uploadedTime = new Date(data.uploaded_at);
+            const processedTime = new Date(data.processed_at);
+            const processingDuration = (processedTime - uploadedTime) / 1000;
+
+            document.getElementById('processing-time').textContent = `${processingDuration.toFixed(4)} s`;
         })
         .catch(error => {
-            resultDetailsDiv.innerHTML = `<p>Error fetching task results: ${error.message}</p>`;
+            console.error("Error fetching task results:", error);
         });
 }
