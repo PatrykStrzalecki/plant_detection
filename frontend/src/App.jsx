@@ -15,21 +15,26 @@ const VIEWS = {
 
 const App = () => {
   const [currentView, setCurrentView] = useState(VIEWS.DASHBOARD);
+  const [processedResult, setProcessedResult] = useState(null);
 
   const handleViewChange = (view) => {
     setCurrentView(view);
   };
 
+  const handleProcessComplete = (result) => {
+    setProcessedResult(result);
+  };
+
   const renderView = () => {
     switch (currentView) {
       case VIEWS.UPLOAD:
-        return <UploadScreen onViewChange={handleViewChange} views={VIEWS} />;
+        return <UploadScreen onViewChange={handleViewChange} views={VIEWS} onProcessComplete={handleProcessComplete} />;
       case VIEWS.SETTINGS:
         return <Settings />;
       case VIEWS.ANALYTICS:
         return <Analytics />;
       default:
-        return <Dashboard />;
+        return <Dashboard processedResult={processedResult} />;
     }
   };
 

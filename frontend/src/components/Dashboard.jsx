@@ -3,11 +3,11 @@ import DailyStatisticsPanel from './DailyStatisticsPanel';
 import ResultsPanel from './ResultsPanel';
 import MachineControlPanel from './MachineControlPanel';
 
-const Dashboard = () => {
+const Dashboard = ({ processedResult }) => {
   return (
     <div className="grid grid-cols-[1fr_2fr_1fr] gap-5 w-full h-full max-h-full overflow-hidden">
-        <DailyStatisticsPanel />
-        <ResultsPanel />
+        <DailyStatisticsPanel processedResult={processedResult}/>
+        <ResultsPanel processedResult={processedResult}/>
         <MachineControlPanel />
     </div>
   );

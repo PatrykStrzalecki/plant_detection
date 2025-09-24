@@ -4,8 +4,10 @@ import { Play, Pause, Plus, Minus } from 'lucide-react';
 const MachineControlPanel = () => {
 
   const [isMachineActive, setIsMachineActive] = useState(false);
-  const [autoStop, setAutoStop] = useState(true);
+  const [autoStop, setAutoStop] = useState(false);
   const [speed, setSpeed] = useState(60);
+  const [selectedHour, setSelectedHour] = useState(10);
+  const [selectedMinute, setSelectedMinute] = useState(30);
 
   // Function to increase speed
   const increaseSpeed = () => {
@@ -19,6 +21,14 @@ const MachineControlPanel = () => {
 
   const handleStartStop = () => {
     setIsMachineActive(prevState => !prevState);
+  };
+
+  const handleHourChange = (e) => {
+    setSelectedHour(parseInt(e.target.value, 10));
+  };
+
+  const handleMinuteChange = (e) => {
+    setSelectedMinute(parseInt(e.target.value, 10));
   };
 
   return (
@@ -87,14 +97,30 @@ const MachineControlPanel = () => {
           </div>
           <div className="flex items-center gap-2">
             {/* hours */}
-            <div className="bg-neutral-700 w-16 h-16 rounded-md flex items-center justify-center text-3xl font-bold border-2 border-black">
-              10
-            </div>
+            <select
+              className="bg-neutral-700 w-16 h-16 rounded-md flex items-center justify-center text-3xl font-bold border-2 border-black appearance-none text-center"
+              value={selectedHour}
+              onChange={handleHourChange}
+            >
+              {[...Array(24).keys()].map(h => (
+                <option key={`hour-${h}`} value={h}>
+                  {h.toString().padStart(2, '0')}
+                </option>
+              ))}
+            </select>
             <span className="text-3xl font-bold">:</span>
             {/* minutes */}
-            <div className="bg-neutral-700 w-16 h-16 rounded-md flex items-center justify-center text-3xl font-bold border-2 border-black">
-              30
-            </div>
+            <select
+              className="bg-neutral-700 w-16 h-16 rounded-md flex items-center justify-center text-3xl font-bold border-2 border-black appearance-none text-center"
+              value={selectedMinute}
+              onChange={handleMinuteChange}
+            >
+              {[...Array(60).keys()].map(m => (
+                <option key={`minute-${m}`} value={m}>
+                  {m.toString().padStart(2, '0')}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -103,6 +129,3 @@ const MachineControlPanel = () => {
 };
 
 export default MachineControlPanel;
-
-
-
