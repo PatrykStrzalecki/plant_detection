@@ -17,6 +17,7 @@ from common.utils.defaults import (
     IMAGE_SIZE,
     CONFIDENCE_THRESHOLD,
     MODEL_PATH,
+    BEST_MODEL_PATH,
     NMS_THRESHOLD,
     INPUT_DIR,
     OUTPUT_DIR,
@@ -49,13 +50,24 @@ except Exception as e:
     logger.error(f"Error occurred while setting up directories: {e}")
 
 try:
-    model = YOLO(MODEL_PATH)
+    model = YOLO(BEST_MODEL_PATH)
 except Exception as e:
     logger.error(f"Error occurred while loading model: {e}")
     model = None
 
 Base.metadata.create_all(bind=engine)
 
+def get_plant_category(flower_count : int = 0) -> int:
+    if flower_count >= 13:
+        return 1
+    elif 10 <= flower_count <= 12:
+        return 2
+    elif 6 <= flower_count <= 9:
+        return 3
+    elif 1 <= flower_count <= 5:
+        return 4
+    else:
+        return 4
 
 @celery_app.task(name = "process_image_task")
 def process_image_task(detection_id: int) -> Dict[str, Any]:
@@ -112,7 +124,7 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         detection_result.processed_image_path = output_image_path
         detection_result.processed_at = datetime.datetime.now()
         detection_result.num_flowers = len(formated_bounding_boxes)
-        detection_result.category = FLOWER_CATEGORY         # TODO
+        detection_result.category = get_plant_category(len(formated_bounding_boxes))
         detection_result.bounding_boxes = formated_bounding_boxes
         detection_result.task_status = TASK_STATUS_COMPLETED
         db.commit()
@@ -124,8 +136,8 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
             "status": TASK_STATUS_COMPLETED,
             "detection_id": detection_id,
             "output_image_path": output_image_path,
-            "num_flowers": len(bounding_boxes),
-            "category": FLOWER_CATEGORY
+            "num_flowers": detection_result.num_flowers,
+            "category": detection_result.category
         }
            
     except Exception as e:

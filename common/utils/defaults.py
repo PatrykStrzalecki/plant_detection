@@ -17,5 +17,6 @@ CONFIDENCE_THRESHOLD = 0.25
 NMS_THRESHOLD = 0.45
 
 MODEL_PATH = "./models/yolo11n.pt"
+BEST_MODEL_PATH = "./models/best.pt"
 
 FLOWER_CATEGORY = 1

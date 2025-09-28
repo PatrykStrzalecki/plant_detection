@@ -13,9 +13,18 @@ const VIEWS = {
   ANALYTICS: 'analytics',
 };
 
+const initialStats = {
+  '1': 0,
+  '2': 0,
+  '3': 0,
+  '4': 0,
+};
+
 const App = () => {
   const [currentView, setCurrentView] = useState(VIEWS.DASHBOARD);
   const [processedResult, setProcessedResult] = useState(null);
+  const [statistics, setStatistics] = useState(initialStats);
+  const [processedIds, setProcessedIds] = useState(new Set());
 
   const handleViewChange = (view) => {
     setCurrentView(view);
@@ -23,6 +32,24 @@ const App = () => {
 
   const handleProcessComplete = (result) => {
     setProcessedResult(result);
+
+    if (result && result.id && !processedIds.has(result.id)) {
+      const category = result.category || 4;
+      const key = category.toString();
+      
+      if (statistics.hasOwnProperty(key)) {
+        setStatistics(prevStats => ({
+          ...prevStats,
+          [key]: prevStats[key] + 1
+        }));
+        setProcessedIds(prev => new Set(prev).add(result.id));
+      }
+    }
+  };
+
+  const handleResetStatistics = () => {
+    setStatistics({ ...initialStats });
+    setProcessedIds(new Set());
   };
 
   const renderView = () => {
@@ -34,7 +61,7 @@ const App = () => {
       case VIEWS.ANALYTICS:
         return <Analytics />;
       default:
-        return <Dashboard processedResult={processedResult} />;
+        return <Dashboard processedResult={processedResult} statistics={statistics} onResetStatistics={handleResetStatistics} />;
     }
   };
 
