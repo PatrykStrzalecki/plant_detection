@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import UploadScreen from './components/UploadScreen';
 import Settings from './components/Settings';
 import Analytics from './components/Analytics';
+
+// API endpoints
+const STATUS_URL = "http://localhost:8000/task-status/";
+const WS_URL = "ws://localhost:8000/ws/frontend";
 
 // Available views in the application
 const VIEWS = {
@@ -25,6 +29,52 @@ const App = () => {
   const [processedResult, setProcessedResult] = useState(null);
   const [statistics, setStatistics] = useState(initialStats);
   const [processedIds, setProcessedIds] = useState(new Set());
+  const [frontendWebsocket, setFrontendWebsocket] = useState(null);
+
+  useEffect(() => {
+    const ws = new WebSocket(WS_URL);
+    setFrontendWebsocket(ws);
+
+    ws.onopen = () => {
+      console.log('WebSocket connection established');
+      setFrontendWebsocket(ws);
+    }
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const taskStatus = data.status;
+      console.log('Message from server:', data);
+      if (taskStatus === "SUCCESS") {
+        const taskId = data.task_id;
+        fetch(STATUS_URL + taskId)
+          .then(response => response.json())
+          .then(resultData => {
+            handleProcessComplete(resultData);
+            setCurrentView(VIEWS.DASHBOARD);
+          })
+          .catch(error => {
+            console.error('Error fetching task result:', error);
+          });
+      } else if (taskStatus === "FAILURE") {
+        console.error('Task failed on server side');
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+      setFrontendWebsocket(null);
+    }
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    }
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, []);
 
   const handleViewChange = (view) => {
     setCurrentView(view);
