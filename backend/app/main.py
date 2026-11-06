@@ -4,7 +4,7 @@ import asyncio
 
 from contextlib import asynccontextmanager
 
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Set
 from fastapi import (
     FastAPI, UploadFile, HTTPException, status,
     File, Depends, WebSocket, WebSocketDisconnect
@@ -36,6 +36,7 @@ REDIS_URL = os.getenv("REDIS_URL")
 redis_client = aioredis.from_url(REDIS_URL, decode_responses = True)
 
 active_connections: Dict[int, WebSocket] = {}
+frontend_connections: Set[WebSocket] = set()
 
 async def redis_listener():
     pubsub = redis_client.pubsub()
@@ -61,8 +62,22 @@ async def redis_listener():
                         print(f"Error sending message to websocket: {e}")
                         if task_id in active_connections:
                             del active_connections[task_id]
+                
+                if status == TASK_STATUS_COMPLETED:
+                    await notify_all_frontends({"task_id": task_id, "status": status})
+
     except Exception as e:
         print(f"Error in redis listener: {e}")
+
+async def notify_all_frontends(message: dict):
+    disconnected = set()
+    for websocket in frontend_connections:
+        try:
+            await websocket.send_json(message)
+        except Exception as e:
+            print(f"Error notifying frontend: {e}")
+            disconnected.add(websocket)
+    frontend_connections.difference_update(disconnected)
 
 @asynccontextmanager
 async def startup_event(app: FastAPI):
@@ -122,19 +137,6 @@ async def upload_file(
 
     return db_result
 
-@app.get("/detection-result/{detection_id}", response_model = schemas.DetectionResult)
-async def get_detection_result(
-    detection_id: int,
-    db: Session = Depends(get_db)
-) -> schemas.DetectionResult:
-    db_result = db.query(models.DetectionResult).filter(models.DetectionResult.id == detection_id).first()
-    if not db_result:
-        raise HTTPException(
-            status_code = status.HTTP_404_NOT_FOUND,
-            detail = "Detection result not found"
-        )
-    return db_result
-
 @app.get("/task-status/{task_id}", response_model = schemas.DetectionResult)
 async def get_task_status(
     task_id: int,
@@ -158,3 +160,15 @@ async def websocket_endpoint(websocket: WebSocket, task_id: int):
     except WebSocketDisconnect:
         if task_id in active_connections:
             del active_connections[task_id]
+
+@app.websocket("/ws/frontend")
+async def frontend_websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    frontend_connections.add(websocket)
+    print(f"Frontend connected. Total: {len(frontend_connections)}")
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        frontend_connections.discard(websocket)
+        print(f"Frontend disconnected. Total: {len(frontend_connections)}")
