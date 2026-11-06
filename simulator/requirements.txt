@@ -1,0 +1,4 @@
+aiohttp
+customtkinter
+python-dotenv
+redis
