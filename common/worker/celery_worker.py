@@ -11,20 +11,17 @@ from dotenv import load_dotenv
 
 from common.database.schemas import BoundingBox
 from common.database.models import DetectionResult
-from common.database.database import Base, get_db, engine
+from common.database.database import Base, SessionLocal, engine
 
 from common.utils.defaults import (
     IMAGE_SIZE,
     CONFIDENCE_THRESHOLD,
-    MODEL_PATH,
     BEST_MODEL_PATH,
-    NMS_THRESHOLD,
     INPUT_DIR,
     OUTPUT_DIR,
     TASK_STATUS_IN_PROGRESS,
     TASK_STATUS_COMPLETED,
-    TASK_STATUS_FAILED,
-    FLOWER_CATEGORY
+    TASK_STATUS_FAILED
 )
 
 load_dotenv()
@@ -72,8 +69,11 @@ def get_plant_category(flower_count : int = 0) -> int:
 @celery_app.task(name = "process_image_task")
 def process_image_task(detection_id: int) -> Dict[str, Any]:
     logger.info(f"Starting task for detection ID: {detection_id}")
+    
+    db = SessionLocal()
+    detection_result = None
+    
     try:
-        db = next(get_db())
         detection_result = db.query(DetectionResult).filter(DetectionResult.id == detection_id).first()
         if not detection_result:
             logger.error(f"Detection result not found for ID: {detection_id}")
@@ -141,11 +141,17 @@ def process_image_task(detection_id: int) -> Dict[str, Any]:
         }
            
     except Exception as e:
-        detection_result.task_status = TASK_STATUS_FAILED
-        db.commit()
         logger.error(f"Error processing image for detection ID {detection_id}: {e}")
+        # Dzięki defaultowemu `None`, możemy wejść do excepta i na pewno nie padniemy przed zmiana statusu
+        if detection_result:
+            detection_result.task_status = TASK_STATUS_FAILED
+            db.commit()
+            
         redis_client.publish(f"task_status_{detection_id}", TASK_STATUS_FAILED)
         return {
             "status": TASK_STATUS_FAILED,
             "message": str(e)
         }
+    finally:
+        # NAJWAŻNIEJSZE!! Oddaje połączenie do puli SQLAlchemy
+        db.close() 
