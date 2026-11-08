@@ -17,3 +17,9 @@ data/output/
 
 # Detection models
 models/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+images/
