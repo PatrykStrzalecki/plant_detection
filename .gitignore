@@ -14,9 +14,12 @@ venv/
 # Data Folders
 data/input/
 data/output/
+/pipeline/datasets/*
+!/pipeline/datasets/.gitkeep
 
 # Detection models
 models/
+runs/
 
 # Images
 *.jpg
