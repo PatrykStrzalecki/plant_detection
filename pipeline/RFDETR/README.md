@@ -50,3 +50,16 @@ python train_RF_DETR.py
 ```
 
 Checkpoints are saved in `pipeline/runs/rfdetr/`.
+
+## Evaluation
+
+`evaluate.py` provides `test_rfdetr` and writes the shared JSON result format.
+Run it in the RF-DETR environment:
+
+```bash
+python3 -m pipeline.RFDETR.evaluate \
+  --weights pipeline/runs/rfdetr/checkpoint_best_total.pth \
+  --images pipeline/datasets/coco_dataset/test \
+  --annotations pipeline/datasets/coco_dataset/test/_annotations.coco.json \
+  --output evaluation/results/rfdetr.json
+```

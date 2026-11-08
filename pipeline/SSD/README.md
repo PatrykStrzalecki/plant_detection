@@ -51,3 +51,16 @@ python train_SSD.py
 
 Checkpoints are saved in `pipeline/ssd_checkpoints/`, and the training history
 is saved in `pipeline/ssd_results/training_history.json`.
+
+## Evaluation
+
+`evaluate.py` provides `test_ssd` and writes the shared JSON result format.
+Run it in the SSD environment:
+
+```bash
+python3 -m pipeline.SSD.evaluate \
+  --weights pipeline/ssd_checkpoints/ssd_model_best.pth \
+  --images pipeline/datasets/coco_dataset/test \
+  --annotations pipeline/datasets/coco_dataset/test/_annotations.coco.json \
+  --output evaluation/results/ssd.json
+```

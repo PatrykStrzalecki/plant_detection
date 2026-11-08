@@ -18,11 +18,16 @@ data/output/
 !/pipeline/datasets/.gitkeep
 
 # Detection models
-models/
+/models/*
+!/models/.gitkeep
 runs/
 
 # Images
 *.jpg
 *.jpeg
 *.png
-images/
+/evaluation/images/*
+!/evaluation/images/.gitkeep
+
+# Local scripts
+/scripts/*

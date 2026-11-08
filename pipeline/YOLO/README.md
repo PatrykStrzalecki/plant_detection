@@ -64,3 +64,15 @@ python train_YOLO.py
 ```
 
 Results are saved in `pipeline/runs/detect/<model>_<iteration>/`.
+
+## Evaluation
+
+`evaluate.py` exposes `test_yolov11` and `test_yolov12`. Both save the same
+JSON schema used by the SSD and RF-DETR pipelines:
+
+```bash
+python3 -m pipeline.YOLO.evaluate --model yolov11 \
+  --weights pipeline/runs/detect/yolo11n_1/weights/best.pt \
+  --dataset pipeline/datasets/YOLOv11_dataset/data.yaml \
+  --output evaluation/results/yolov11.json
+```
